@@ -8,27 +8,44 @@ function App() {
   const [score, setScore] = useState(0);
   const [submitted, setSubmitted] = useState(false);
 
+  // Function to decode HTML entities
+  const decodeHTML = (html) => {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = html;
+    return textarea.value;
+  };
+
   // Fetch questions from backend when component mounts
   useEffect(() => {
     fetch('http://localhost:5000/api/questions')
       .then(response => response.json())
       .then(data => {
-      if (Array.isArray(data)) {
-        // If your backend sends back a plain array (already extracted)
-        setQuestions(data);
-        console.log('Received array:', data);
-      } else if (data && Array.isArray(data.results)) {
-        // If your backend wraps the questions in a "results" key (e.g., Open Trivia DB format)
-        setQuestions(data.results);
-        console.log('Received results:', data.results);
-      } else {
-        console.error('Unexpected API structure:', data);
-      }
-    })
-    .catch(error => {
-      console.error('Error fetching data:', error);
-    });
-}, []);
+        if (Array.isArray(data)) {
+          // Decode HTML entities in questions and options
+          const decodedQuestions = data.map(q => ({
+            ...q,
+            question: decodeHTML(q.question),
+            options: q.options.map(option => decodeHTML(option))
+          }));
+          setQuestions(decodedQuestions);
+          console.log('Received array:', decodedQuestions);
+        } else if (data && Array.isArray(data.results)) {
+          // Decode HTML entities in questions and options
+          const decodedQuestions = data.results.map(q => ({
+            ...q,
+            question: decodeHTML(q.question),
+            options: q.options.map(option => decodeHTML(option))
+          }));
+          setQuestions(decodedQuestions);
+          console.log('Received results:', decodedQuestions);
+        } else {
+          console.error('Unexpected API structure:', data);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+      });
+  }, []);
 
   // Submit user answers to backend and receive score
   const handleSubmit = (userAnswers) => {

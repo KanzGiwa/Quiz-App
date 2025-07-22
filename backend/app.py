@@ -21,7 +21,6 @@ def get_questions():
     
     try:
         response = requests.get(api_url)
-        print("Raw API response:", response.text)
         data = response.json()
         
         if response.status_code == 200 and data['response_code'] == 0:
@@ -29,21 +28,23 @@ def get_questions():
             correct_answers = []
             
             for item in data['results']:
-                # Combine correct and incorrect answers
-                options = item['incorrect_answers'] + [item['correct_answer']]
+                # Decode HTML entities and combine correct and incorrect answers
+                decoded_correct = html.unescape(item['correct_answer'])
+                decoded_incorrect = [html.unescape(ans) for ans in item['incorrect_answers']]
+                
+                options = decoded_incorrect + [decoded_correct]
                 random.shuffle(options)
                 
                 question_data = {
-                    'question': item['question'],
+                    'question': html.unescape(item['question']),
                     'options': options
                 }
                 
                 questions.append(question_data)
-                correct_answers.append(item['correct_answer'])
+                correct_answers.append(decoded_correct)
             
             return jsonify(questions)
         else:
-            print("Unexpected API response structure:", data) 
             return jsonify({'error': 'Failed to fetch questions'}), 500
             
     except Exception as e:
