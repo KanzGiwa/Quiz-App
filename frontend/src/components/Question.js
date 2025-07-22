@@ -1,7 +1,28 @@
-// receive question data and callback from props
+import React from 'react';
 
-// display question text
+function Question({ question, questionIndex, onAnswerSelect }) {
+  const handleOptionChange = (event) => {
+    onAnswerSelect(questionIndex, event.target.value);
+  };
 
-// for each option:
-//   render radio button with option
-//   on select → trigger callback with selected answer
+  return (
+    <div style={{ margin: '20px 0', padding: '20px', border: '1px solid #ccc' }}>
+      <h3>{question.question}</h3>
+      {question.options.map((option, index) => (
+        <div key={index}>
+          <label>
+            <input
+              type="radio"
+              name={`question-${questionIndex}`}
+              value={option}
+              onChange={handleOptionChange}
+            />
+            {option}
+          </label>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default Question;

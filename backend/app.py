@@ -1,33 +1,70 @@
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+import html
 import requests
-import json 
+import random
 
 # Initialize Flask app
-# Enable CORS for the app
+app = Flask(__name__)
+CORS(app)# Enable CORS for the app
+
+# Store correct answers temporarily (in production, use a database)
+correct_answers = []
 
 # Route: /api/questions (GET)
-    # Build the Open Trivia DB API URL (set number of questions, type=multiple)
-    # Make a GET request to the trivia API
-    # If the request is successful:
-        # Parse the JSON response
-        # For each question:
-            # Extract question text, options, correct answer
-            # Shuffle the options
-            # Add the question (without the correct answer) to a list
-        # Return the list of questions as JSON to the frontend
-    # Else:
-        # Return an error response
+@app.route('/api/questions', methods=['GET'])
+def get_questions():
+    global correct_answers
+    
+    # Build Open Trivia DB API URL
+    api_url = "https://opentdb.com/api.php?amount=10&type=multiple"
+    
+    try:
+        response = requests.get(api_url)
+        print("Raw API response:", response.text)
+        data = response.json()
+        
+        if response.status_code == 200 and data['response_code'] == 0:
+            questions = []
+            correct_answers = []
+            
+            for item in data['results']:
+                # Combine correct and incorrect answers
+                options = item['incorrect_answers'] + [item['correct_answer']]
+                random.shuffle(options)
+                
+                question_data = {
+                    'question': item['question'],
+                    'options': options
+                }
+                
+                questions.append(question_data)
+                correct_answers.append(item['correct_answer'])
+            
+            return jsonify(questions)
+        else:
+            print("Unexpected API response structure:", data) 
+            return jsonify({'error': 'Failed to fetch questions'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # Route: /api/submit (POST)
-    # Receive user's answers from the frontend (JSON)
-    # For each answer:
-        # Compare user's answer with the correct answer
-        # Count the number of correct answers
-    # Return the score as JSON
+@app.route('/api/submit', methods=['POST'])
+def submit_answers():
+    user_answers = request.json.get('answers', [])
+    
+    score = 0
+    for i, user_answer in enumerate(user_answers):
+        if i < len(correct_answers) and user_answer == correct_answers[i]:
+            score += 1
+    
+    return jsonify({
+        'score': score,
+        'total': len(correct_answers)
+    })
 
 # Start the Flask app in debug mode
-    #compare_user_answers_with_correct_ones()
-    #calculate_score()
-    #return_score_as_json()
+if __name__ == '__main__':
+    app.run(debug=True)
 
-#start_flask_app_in_debug_mode()

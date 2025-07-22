@@ -1,10 +1,36 @@
-// receive questions and onSubmit from props
+import React, { useState } from 'react';
+import Question from './Question';
 
-// initialize state for user answers
+function Quiz({ questions, onSubmit }) {
+  const [userAnswers, setUserAnswers] = useState({});
 
-// for each question:
-//   display question text and options
-//   record selected option on change
+  const handleAnswerSelect = (questionIndex, selectedAnswer) => {
+    setUserAnswers(prev => ({
+      ...prev,
+      [questionIndex]: selectedAnswer
+    }));
+  };
 
-// on submit button click:
-//   call onSubmit with collected answers
+  const handleSubmit = () => {
+    const answersArray = questions.map((_, index) => userAnswers[index] || '');
+    onSubmit(answersArray);
+  };
+
+  return (
+    <div>
+      {Array.isArray(questions) && questions.map((question, index) => (
+        <Question
+          key={index}
+          question={question}
+          questionIndex={index}
+          onAnswerSelect={handleAnswerSelect}
+        />
+      ))}
+      <button onClick={handleSubmit} disabled={Object.keys(userAnswers).length !== questions.length}>
+        Submit Quiz
+      </button>
+    </div>
+  );
+}
+
+export default Quiz;
