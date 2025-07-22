@@ -7,6 +7,8 @@ function App() {
   const [questions, setQuestions] = useState([]);
   const [score, setScore] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [quizStarted, setQuizStarted] = useState(false);
 
   // Function to decode HTML entities
   const decodeHTML = (html) => {
@@ -15,8 +17,9 @@ function App() {
     return textarea.value;
   };
 
-  // Fetch questions from backend when component mounts
-  useEffect(() => {
+  // Fetch questions from backend
+  const fetchQuestions = () => {
+    setLoading(true);
     fetch('http://localhost:5000/api/questions')
       .then(response => response.json())
       .then(data => {
@@ -28,6 +31,8 @@ function App() {
             options: q.options.map(option => decodeHTML(option))
           }));
           setQuestions(decodedQuestions);
+          setQuizStarted(true);
+          setLoading(false);
           console.log('Received array:', decodedQuestions);
         } else if (data && Array.isArray(data.results)) {
           // Decode HTML entities in questions and options
@@ -37,18 +42,36 @@ function App() {
             options: q.options.map(option => decodeHTML(option))
           }));
           setQuestions(decodedQuestions);
+          setQuizStarted(true);
+          setLoading(false);
           console.log('Received results:', decodedQuestions);
         } else {
           console.error('Unexpected API structure:', data);
+          setLoading(false);
         }
       })
       .catch(error => {
         console.error('Error fetching data:', error);
+        setLoading(false);
       });
-  }, []);
+  };
+
+  // Start new quiz
+  const handleStartQuiz = () => {
+    fetchQuestions();
+  };
+
+  // Reset quiz to start screen
+  const handleResetQuiz = () => {
+    setQuestions([]);
+    setScore(0);
+    setSubmitted(false);
+    setQuizStarted(false);
+  };
 
   // Submit user answers to backend and receive score
   const handleSubmit = (userAnswers) => {
+    setLoading(true);
     fetch('http://localhost:5000/api/submit', {
       method: 'POST',
       headers: {
@@ -60,25 +83,47 @@ function App() {
       .then(data => {
         setScore(data.score);
         setSubmitted(true);
+        setLoading(false);
         console.log('Submission response:', data);
       })
       .catch(error => {
         console.error('Error submitting data:', error);
+        setLoading(false);
       });
   };
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Quiz App</h1>
-        {!submitted ? (
+        <h1 className="quiz-title">🧠 Quiz Master</h1>
+        {loading ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <div style={{ fontSize: '18px' }}>Loading awesome questions...</div>
+          </div>
+        ) : !quizStarted ? (
+          <div className="start-container">
+            <p style={{ fontSize: '18px', marginBottom: '30px', lineHeight: '1.6' }}>
+              🚀 Welcome to Quiz Master! Test your knowledge with 10 challenging trivia questions 
+              from various categories. Are you ready to become a quiz champion?
+            </p>
+            <button 
+              className="start-button"
+              onClick={handleStartQuiz}
+            >
+              🎯 Start Quiz
+            </button>
+          </div>
+        ) : !submitted ? (
           <Quiz questions={questions} onSubmit={handleSubmit} />
         ) : (
-          <Result score={score} total={questions.length} />
+          <Result score={score} total={questions.length} onReset={handleResetQuiz} />
         )}
       </header>
     </div>
   );
 }
+
+
 
 export default App;
