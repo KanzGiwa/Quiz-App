@@ -62,7 +62,8 @@ def submit_answers():
     
     return jsonify({
         'score': score,
-        'total': len(correct_answers)
+        'total': len(correct_answers),
+        'correctAnswers': correct_answers
     })
 
 # Start the Flask app in debug mode

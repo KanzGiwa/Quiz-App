@@ -9,6 +9,8 @@ function App() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [userAnswers, setUserAnswers] = useState([]);
+  const [correctAnswers, setCorrectAnswers] = useState([]);
 
   // Function to decode HTML entities
   const decodeHTML = (html) => {
@@ -67,21 +69,25 @@ function App() {
     setScore(0);
     setSubmitted(false);
     setQuizStarted(false);
+    setUserAnswers([]);
+    setCorrectAnswers([]);
   };
 
   // Submit user answers to backend and receive score
-  const handleSubmit = (userAnswers) => {
+  const handleSubmit = (answers) => {
     setLoading(true);
+    setUserAnswers(answers);
     fetch('http://localhost:5000/api/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ answers: userAnswers }),
+      body: JSON.stringify({ answers: answers }),
     })
       .then(response => response.json())
       .then(data => {
         setScore(data.score);
+        setCorrectAnswers(data.correctAnswers || []);
         setSubmitted(true);
         setLoading(false);
         console.log('Submission response:', data);
@@ -117,7 +123,14 @@ function App() {
         ) : !submitted ? (
           <Quiz questions={questions} onSubmit={handleSubmit} />
         ) : (
-          <Result score={score} total={questions.length} onReset={handleResetQuiz} />
+          <Result 
+            score={score} 
+            total={questions.length} 
+            onReset={handleResetQuiz}
+            questions={questions}
+            userAnswers={userAnswers}
+            correctAnswers={correctAnswers}
+          />
         )}
       </header>
     </div>
