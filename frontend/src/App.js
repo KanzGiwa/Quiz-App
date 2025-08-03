@@ -4,6 +4,9 @@ import Quiz from './components/Quiz';
 import Result from './components/Result';
 
 function App() {
+
+  console.log('App component loaded'); // Debug log
+
   const [questions, setQuestions] = useState([]);
   const [score, setScore] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -17,6 +20,8 @@ function App() {
   const API_BASE_URL = process.env.NODE_ENV === 'production' 
     ? '/api' 
     : 'http://localhost:5000/api';
+
+  console.log('Environment:', process.env.NODE_ENV); // Debug log
 
   // Function to decode HTML entities
   const decodeHTML = (html) => {
