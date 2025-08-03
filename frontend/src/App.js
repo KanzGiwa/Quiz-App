@@ -11,6 +11,12 @@ function App() {
   const [quizStarted, setQuizStarted] = useState(false);
   const [userAnswers, setUserAnswers] = useState([]);
   const [correctAnswers, setCorrectAnswers] = useState([]);
+  const [sessionId, setSessionId] = useState('');
+
+  // API base URL - use environment variable or fallback to localhost
+  const API_BASE_URL = process.env.NODE_ENV === 'production' 
+    ? '/api' 
+    : 'http://localhost:5000/api';
 
   // Function to decode HTML entities
   const decodeHTML = (html) => {
@@ -22,12 +28,23 @@ function App() {
   // Fetch questions from backend
   const fetchQuestions = () => {
     setLoading(true);
-    fetch('http://localhost:5000/api/questions')
+    fetch(`${API_BASE_URL}/questions`)
       .then(response => response.json())
       .then(data => {
-        if (Array.isArray(data)) {
+        // Handle both local Flask format and Vercel format
+        let questionsData = data;
+        let sessionIdData = '';
+        
+        if (data.questions && data.sessionId) {
+          // Vercel format
+          questionsData = data.questions;
+          sessionIdData = data.sessionId;
+          setSessionId(sessionIdData);
+        }
+        
+        if (Array.isArray(questionsData)) {
           // Decode HTML entities in questions and options
-          const decodedQuestions = data.map(q => ({
+          const decodedQuestions = questionsData.map(q => ({
             ...q,
             question: decodeHTML(q.question),
             options: q.options.map(option => decodeHTML(option))
@@ -36,9 +53,9 @@ function App() {
           setQuizStarted(true);
           setLoading(false);
           console.log('Received array:', decodedQuestions);
-        } else if (data && Array.isArray(data.results)) {
+        } else if (questionsData && Array.isArray(questionsData.results)) {
           // Decode HTML entities in questions and options
-          const decodedQuestions = data.results.map(q => ({
+          const decodedQuestions = questionsData.results.map(q => ({
             ...q,
             question: decodeHTML(q.question),
             options: q.options.map(option => decodeHTML(option))
@@ -71,18 +88,25 @@ function App() {
     setQuizStarted(false);
     setUserAnswers([]);
     setCorrectAnswers([]);
+    setSessionId('');
   };
 
   // Submit user answers to backend and receive score
   const handleSubmit = (answers) => {
     setLoading(true);
     setUserAnswers(answers);
-    fetch('http://localhost:5000/api/submit', {
+    
+    const submitData = {
+      answers: answers,
+      sessionId: sessionId
+    };
+    
+    fetch(`${API_BASE_URL}/submit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ answers: answers }),
+      body: JSON.stringify(submitData),
     })
       .then(response => response.json())
       .then(data => {
